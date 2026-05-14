@@ -134,22 +134,24 @@ Automatically removes old idempotency keys after a fixed time.
 
 ---
 
-## Final Architecture Summary
+## Architecture
 
-```text
-Client
-  ↓
-POST /process-payment
-  ↓
-FastAPI Routes
-  ↓
-Payment Service
-  ↓
-Idempotency Store
-  ↓
-Decision:
-  ├── New Key → Process payment
-  ├── Same Key + Same Payload → Return cached response
-  └── Same Key + Different Payload → Reject (409)
-  
+```mermaid
+sequenceDiagram
+Client->>API: POST /process-payment (Idempotency-Key)
+API->>Store: Check key existence
+
+alt New Key
+API->>Service: Process payment (simulate delay)
+Service->>Store: Save response
+Store-->>Client: Return success response
+
+else Same Key + Same Payload
+Store-->>API: Return cached response
+API-->>Client: Response + X-Cache-Hit: true
+
+else Same Key + Different Payload
+Store-->>API: Conflict detected
+API-->>Client: 409 Conflict
+end
 ```
